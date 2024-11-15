@@ -4,8 +4,8 @@ from graphviz import Digraph
 
 
 class Markov:
-    def __init__(self, transitions, rewards=None, node_names=None, prob_dist=None, values=None, ):
-        # data의 타입에 따라 클래스 변수 초기화
+    def __init__(self, transitions, node_names=None, rewards=None, prob_dist=None, values=None, ):
+        # transitions의 타입에 따라 클래스 변수 초기화
         if isinstance(transitions, pd.DataFrame):
             self.transitions = transitions
             self._node_names = list(
@@ -38,6 +38,27 @@ class Markov:
                 raise ValueError(
                     "Transitions must be a Pandas DataFrame, NumPy ndarray, list, or dict.")
 
+        if rewards is not None:
+            # rewards의 타입에 따라 클래스 변수 초기화
+            if isinstance(rewards, pd.Series):
+                assert all((self._node_names == rewards.index)
+                           ), "The index of rewards does not match the node_names."
+                self.rewards = rewards
+
+            elif isinstance(rewards, dict):
+                rewards = self._dict_to_series(rewards)
+                assert all((self._node_names == rewards.index)
+                           ), "The index of rewards does not match the node_names."
+                self.rewards = rewards
+
+            elif isinstance(rewards, (np.ndarray, list)):
+                self.rewards = pd.Series(rewards, index=self._node_names)
+            else:
+                raise ValueError(
+                    "Rewards must be a Pandas Series, NumPy ndarray, list, or dict.")
+
+            self.rewards = self.rewards[self._node_names]
+
     def transitions_as_array(self):
         return self.transitions.values
 
@@ -56,15 +77,19 @@ class Markov:
 
         return df
 
+    def _dict_to_series(self, _dict):
+        return pd.Series(_dict)
+
 
 class PlotMarkov:
     def __init__(self, markov):
         self.markov = markov
         self.transitions = self._dataframe_to_dict(markov.transitions)
+        self._rewards = {}
         self._probabilities = {}
         self._values = {}
 
-    def _draw_graph(self, show_probabilities=False, show_values=False):
+    def _draw_graph(self, show_rewards=False, show_probabilities=False, show_values=False):
         graph = Digraph()
         graph.attr(rankdir='LR')
         graph.attr('node', shape='circle',
@@ -74,6 +99,9 @@ class PlotMarkov:
         for state in self.transitions.keys():
             label = f'<B>{state}</B>'
 
+            if show_rewards:
+                r = self._rewards.get(state, 0)
+                label += f'<br/><FONT COLOR="Black" POINT-SIZE="10">r = {r:.2f}</FONT>'
             if show_probabilities:
                 p = self._probabilities.get(state, 0)
                 label += f'<br/><FONT COLOR="Red" POINT-SIZE="10">p = {p:1.2f}</FONT>'
