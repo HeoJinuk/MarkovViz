@@ -4,7 +4,7 @@ from graphviz import Digraph
 
 
 class Markov:
-    def __init__(self, transitions, node_names=None, rewards=None, probs=None, values=None, ):
+    def __init__(self, transitions, node_names=None):
         # transitions의 타입에 따라 클래스 변수 초기화
         if isinstance(transitions, pd.DataFrame):
             self._transitions = transitions
@@ -38,13 +38,6 @@ class Markov:
                 raise ValueError(
                     "Transitions must be a Pandas DataFrame, NumPy ndarray, list, or dict.")
 
-        if rewards is not None:
-            self._rewards = self._validate_and_convert_1d(rewards, 'rewards')
-        if probs is not None:
-            self._probs = self._validate_and_convert_1d(probs, 'probs')
-        if values is not None:
-            self._values = self._validate_and_convert_1d(values, 'values')
-
     @property
     def transitions(self):
         return self._transitions
@@ -52,18 +45,6 @@ class Markov:
     @property
     def node_names(self):
         return self._node_names
-
-    @property
-    def rewards(self):
-        return self._is_variable_defined('_rewards')
-
-    @property
-    def probs(self):
-        return self._is_variable_defined('_probs')
-
-    @property
-    def values(self):
-        return self._is_variable_defined('_values')
 
     def transitions_as_array(self):
         return self._transitions.values
@@ -104,16 +85,56 @@ class Markov:
         return getattr(self, var_name, None)
 
 
+class MarkovChain(Markov):
+    def __init__(self, transitions, node_names=None, probs=None):
+        super().__init__(transitions=transitions, node_names=node_names)
+
+        if probs is not None:
+            self._probs = self._validate_and_convert_1d(probs, 'probs')
+
+    @property
+    def probs(self):
+        return self._is_variable_defined('_probs')
+
+
+class MarkovRewardProcess(Markov):
+    def __init__(self, transitions, node_names=None, rewards=None, values=None,):
+        super().__init__(transitions=transitions, node_names=node_names)
+
+        if rewards is not None:
+            self._rewards = self._validate_and_convert_1d(rewards, 'rewards')
+
+        if values is not None:
+            self._values = self._validate_and_convert_1d(values, 'values')
+
+    @property
+    def rewards(self):
+        return self._is_variable_defined('_rewards')
+
+    @property
+    def values(self):
+        return self._is_variable_defined('_values')
+
+    @property
+    def probs(self):
+        return self._is_variable_defined('_probs')
+
+
 class PlotMarkov:
     def __init__(self, markov):
         self.markov = markov
         self.transitions = self._dataframe_to_dict(markov.transitions)
-        self.rewards = self._series_to_dict(
-            markov.rewards) if markov.rewards is not None else {}
-        self.probs = self._series_to_dict(
-            markov.probs) if markov.probs is not None else {}
-        self.values = self._series_to_dict(
-            markov.values) if markov.values is not None else {}
+
+        if isinstance(self.markov, MarkovChain):
+            self.probs = self._series_to_dict(
+                markov.probs) if markov.probs is not None else {}
+
+        if isinstance(self.markov, MarkovRewardProcess):
+            self.rewards = self._series_to_dict(
+                markov.rewards) if markov.rewards is not None else {}
+
+            self.values = self._series_to_dict(
+                markov.values) if markov.values is not None else {}
 
     def _draw_graph(self, show_rewards=False, show_probabilities=False, show_values=False):
         graph = Digraph()

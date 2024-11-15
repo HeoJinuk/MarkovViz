@@ -1,1 +1,1 @@
-from .markov import Markov, PlotMarkov
+from .markov import MarkovChain, MarkovRewardProcess,  PlotMarkov
