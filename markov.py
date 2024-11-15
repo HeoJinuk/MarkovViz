@@ -4,17 +4,17 @@ from graphviz import Digraph
 
 
 class Markov:
-    def __init__(self, transitions, node_names=None, rewards=None, prob_dist=None, values=None, ):
+    def __init__(self, transitions, node_names=None, rewards=None, probs=None, values=None, ):
         # transitions의 타입에 따라 클래스 변수 초기화
         if isinstance(transitions, pd.DataFrame):
-            self.transitions = transitions
+            self._transitions = transitions
             self._node_names = list(
-                self.transitions.columns if (node_names is None) else node_names)
+                self._transitions.columns if (node_names is None) else node_names)
 
         elif isinstance(transitions, dict):
-            self.transitions = self._dict_to_dataframe(transitions)
+            self._transitions = self._dict_to_dataframe(transitions)
             self._node_names = list(
-                self.transitions.columns if (node_names is None) else node_names)
+                self._transitions.columns if (node_names is None) else node_names)
 
         else:
             if isinstance(transitions, np.ndarray):
@@ -23,7 +23,7 @@ class Markov:
                         f'Node_{i}' for i in range(transitions.shape[0])]
                 else:
                     self._node_names = list(node_names)
-                self.transitions = pd.DataFrame(
+                self._transitions = pd.DataFrame(
                     transitions, index=self._node_names, columns=self._node_names)
             elif isinstance(transitions, list):
                 if node_names is None:
@@ -31,7 +31,7 @@ class Markov:
                         f'Node_{i}' for i in range(len(transitions[0]))]
                 else:
                     self._node_names = list(node_names)
-                self.transitions = pd.DataFrame(
+                self._transitions = pd.DataFrame(
                     transitions, index=self._node_names, columns=self._node_names)
 
             else:
@@ -39,32 +39,34 @@ class Markov:
                     "Transitions must be a Pandas DataFrame, NumPy ndarray, list, or dict.")
 
         if rewards is not None:
-            # rewards의 타입에 따라 클래스 변수 초기화
-            if isinstance(rewards, pd.Series):
-                assert all((self._node_names == rewards.index)
-                           ), "The index of rewards does not match the node_names."
-                self.rewards = rewards
+            self._rewards = self._validate_and_convert_1d(rewards, 'rewards')
+        if probs is not None:
+            self._probs = self._validate_and_convert_1d(probs, 'probs')
+        if values is not None:
+            self._values = self._validate_and_convert_1d(values, 'values')
 
-            elif isinstance(rewards, dict):
-                rewards = self._dict_to_series(rewards)
-                assert all((self._node_names == rewards.index)
-                           ), "The index of rewards does not match the node_names."
-                self.rewards = rewards
-
-            elif isinstance(rewards, (np.ndarray, list)):
-                self.rewards = pd.Series(rewards, index=self._node_names)
-            else:
-                raise ValueError(
-                    "Rewards must be a Pandas Series, NumPy ndarray, list, or dict.")
-
-            self.rewards = self.rewards[self._node_names]
-
-    def transitions_as_array(self):
-        return self.transitions.values
+    @property
+    def transitions(self):
+        return self._transitions
 
     @property
     def node_names(self):
         return self._node_names
+
+    @property
+    def rewards(self):
+        return self._rewards
+
+    @property
+    def probs(self):
+        return self._probs
+
+    @property
+    def values(self):
+        return self._values
+
+    def transitions_as_array(self):
+        return self._transitions.values
 
     def save_to_csv(self):
         pass
@@ -80,13 +82,31 @@ class Markov:
     def _dict_to_series(self, _dict):
         return pd.Series(_dict)
 
+    def _validate_and_convert_1d(self, data, data_name):
+        if isinstance(data, pd.Series):
+            assert all((self._node_names == data.index)
+                       ), f"The index of '{data_name}' does not match the node_names."
+
+        elif isinstance(data, dict):
+            data = self._dict_to_series(data)
+            assert all((self._node_names == data.index)
+                       ), f"The index of '{data_name}' does not match the node_names."
+
+        elif isinstance(data, (np.ndarray, list)):
+            data = pd.Series(data, index=self._node_names)
+        else:
+            raise ValueError(
+                f"'{data_name}' must be a Pandas Series, NumPy ndarray, list, or dict.")
+
+        return data[self._node_names]
+
 
 class PlotMarkov:
     def __init__(self, markov):
         self.markov = markov
         self.transitions = self._dataframe_to_dict(markov.transitions)
         self._rewards = {}
-        self._probabilities = {}
+        self._probs = {}
         self._values = {}
 
     def _draw_graph(self, show_rewards=False, show_probabilities=False, show_values=False):
@@ -103,7 +123,7 @@ class PlotMarkov:
                 r = self._rewards.get(state, 0)
                 label += f'<br/><FONT COLOR="Black" POINT-SIZE="10">r = {r:.2f}</FONT>'
             if show_probabilities:
-                p = self._probabilities.get(state, 0)
+                p = self._probs.get(state, 0)
                 label += f'<br/><FONT COLOR="Red" POINT-SIZE="10">p = {p:1.2f}</FONT>'
             if show_values:
                 v = self._values.get(state, 0)
