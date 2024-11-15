@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import numpy as np
 import pandas as pd
 from graphviz import Digraph
@@ -159,8 +161,36 @@ class MarkovRewardProcess(Markov):
         P = self.transitions_as_array()
         I = np.eye(*P.shape)
         R = self._series_to_array(self._rewards)
+        V = np.linalg.inv(I - self.gamma*P) @ (P@R)
+        return self._validate_and_convert_1d(V, 'V')
 
-        return np.linalg.inv(I - self.gamma*P) @ (P@R)
+    def evaluate_by_DP(self, threshold=0.001):
+        transitions = self._transitions
+        V = defaultdict(lambda: 0)
+
+        def eval_onestep(transitions, V):
+            for state in transitions.index:
+                transition_probs = transitions.loc[state]
+                new_V = 0
+                for next_state, prob in transition_probs.items():
+                    r = self.rewards[next_state]
+                    new_V += prob * (r + self.gamma * V[next_state])
+                V[state] = new_V
+            return V
+
+        while True:
+            old_V = V.copy()
+            V = eval_onestep(transitions, V)
+
+            delta = 0
+            for state in V.keys():
+                t = abs(V[state] - old_V[state])
+                if delta < t:
+                    delta = t
+
+            if delta < threshold:
+                break
+        return self._validate_and_convert_1d(V, 'V')
 
 
 class PlotMarkov:
