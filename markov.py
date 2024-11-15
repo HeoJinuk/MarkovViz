@@ -96,6 +96,39 @@ class MarkovChain(Markov):
     def probs(self):
         return self._is_variable_defined('_probs')
 
+    def set_probs(self, probs):
+        self._probs = self._validate_and_convert_1d(probs, 'probs')
+
+    def converge_markov_chain(self, initial_state, max_iterations=None, threshold=1e-6, verbose=False):
+        state = self._validate_and_convert_1d(
+            initial_state, 'initial_state').values
+        iteration = 0
+        transition_matrix = self.transitions_as_array()
+
+        while True:
+            previous_state = state
+            state = state @ transition_matrix
+
+            # 수렴 조건 확인
+            if np.all(np.abs(state - previous_state) < threshold):
+                if verbose:
+                    print(f"Converged in {iteration} iterations.")
+                break
+
+            iteration += 1
+
+            # max_iterations가 설정되어 있을 경우 체크
+            if max_iterations is not None and iteration >= max_iterations:
+                if verbose:
+                    print(f"Reached maximum iterations ({max_iterations}).")
+                break
+
+            # verbose가 True일 경우 현재 상태 출력
+            if verbose:
+                print(f"Iteration {iteration}: {state}")
+
+        return state
+
 
 class MarkovRewardProcess(Markov):
     def __init__(self, transitions, node_names=None, rewards=None, values=None,):
