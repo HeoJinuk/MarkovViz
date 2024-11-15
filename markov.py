@@ -133,7 +133,7 @@ class MarkovChain(Markov):
             if verbose:
                 print(f"Iteration {iteration}: {state}")
 
-        return state
+        return self._validate_and_convert_1d(state, 'state')
 
 
 class MarkovRewardProcess(Markov):
@@ -227,7 +227,7 @@ class PlotMarkov:
                 label += f'<br/><FONT COLOR="Red" POINT-SIZE="10">p = {p:1.2f}</FONT>'
             if show_values:
                 v = self.values.get(state, 0)
-                label += f'<br/><FONT COLOR="Green" POINT-SIZE="10">v = {v:.2f}</FONT>'
+                label += f'<br/><FONT COLOR="Blue" POINT-SIZE="10">v = {v:.2f}</FONT>'
 
             graph.node(state, label=f'<{label}>',
                        width='0.8', height='0.8', fixedsize='true')
