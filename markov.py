@@ -55,15 +55,15 @@ class Markov:
 
     @property
     def rewards(self):
-        return self._rewards
+        return self._is_variable_defined('_rewards')
 
     @property
     def probs(self):
-        return self._probs
+        return self._is_variable_defined('_probs')
 
     @property
     def values(self):
-        return self._values
+        return self._is_variable_defined('_values')
 
     def transitions_as_array(self):
         return self._transitions.values
@@ -99,6 +99,9 @@ class Markov:
                 f"'{data_name}' must be a Pandas Series, NumPy ndarray, list, or dict.")
 
         return data[self._node_names]
+
+    def _is_variable_defined(self, var_name):
+        return hasattr(self, var_name, None)
 
 
 class PlotMarkov:
