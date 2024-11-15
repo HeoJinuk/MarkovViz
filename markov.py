@@ -105,9 +105,12 @@ class PlotMarkov:
     def __init__(self, markov):
         self.markov = markov
         self.transitions = self._dataframe_to_dict(markov.transitions)
-        self._rewards = {}
-        self._probs = {}
-        self._values = {}
+        self._rewards = self._series_to_dict(
+            markov.reward) if markov.reward is not None else {}
+        self._probs = self._series_to_dict(
+            markov.probs) if markov.probs is not None else {}
+        self._values = self._series_to_dict(
+            markov.values) if markov.values is not None else {}
 
     def _draw_graph(self, show_rewards=False, show_probabilities=False, show_values=False):
         graph = Digraph()
@@ -139,6 +142,18 @@ class PlotMarkov:
                            label=f' {probability:.2f} ')
         return graph
 
+    def draw_graph_with_rewards(self):
+        return self._draw_graph(show_rewards=True)
+
+    def draw_graph_with_probs(self):
+        return self._draw_graph(show_probabilities=True)
+
+    def draw_graph_with_values(self):
+        return self._draw_graph(show_values=True)
+
+    def draw_graph_with_rewards_and_values(self):
+        return self._draw_graph(show_rewards=True, show_values=True)
+
     def _dataframe_to_dict(self, frame):
         transitions = frame.T.to_dict()
         transitions = {
@@ -149,3 +164,6 @@ class PlotMarkov:
             for from_state, destinations in transitions.items()
         }
         return transitions
+
+    def _series_to_dict(self, series):
+        return series.to_dict()
