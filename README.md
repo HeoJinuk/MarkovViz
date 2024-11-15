@@ -56,6 +56,7 @@ plot = PlotMarkov(mc)
 graph = plot.draw_graph_with_probs()
 graph.render('markov_chain_converged', view=True, format='png')
 ```
+![Markov Chain Example](./images/markov_chain_converged.png)
 
 ### Markov Reward Process - State Value Evaluation
 
@@ -63,10 +64,11 @@ graph.render('markov_chain_converged', view=True, format='png')
 from markov import MarkovRewardProcess
 
 # Define a simple grid world:
-# [Start] --> [Left]  --> [End]
-#   |          ^
-#   v          |
-# [Right] -----+
+# [Start] <-> [Left]  --> [End]
+#    ^          ^           ^
+#    |          |           |
+#    v          |           |
+# [Right] ----- + ----------+
 
 transitions = {
     'Start': {'Left': 0.4, 'Right': 0.6},
@@ -107,6 +109,9 @@ plot = PlotMarkov(mrp)
 graph = plot.draw_graph_with_rewards_and_values()
 graph.render('markov_reward_process_evaluated', view=True, format='png')
 ```
+
+![Markov Chain Example](./images/markov_reward_process_evaluated.png)
+
 
 ## Class Overview
 
