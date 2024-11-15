@@ -19,7 +19,7 @@ A Python library for implementing and visualizing Markov models with a focus on 
 
 ```python
 import numpy as np
-from markov import MarkovChain, PlotMarkov
+from markovviz import MarkovChain, PlotMarkov
 
 # Define transition matrix
 transitions = np.array([
@@ -61,7 +61,7 @@ graph.render('markov_chain_converged', view=True, format='png')
 ### Markov Reward Process - State Value Evaluation
 
 ```python
-from markov import MarkovRewardProcess
+from markovviz import MarkovRewardProcess
 
 # Define a simple grid world:
 # [Start] <-> [Left]  --> [End]
