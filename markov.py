@@ -101,18 +101,18 @@ class Markov:
         return data[self._node_names]
 
     def _is_variable_defined(self, var_name):
-        return hasattr(self, var_name, None)
+        return getattr(self, var_name, None)
 
 
 class PlotMarkov:
     def __init__(self, markov):
         self.markov = markov
         self.transitions = self._dataframe_to_dict(markov.transitions)
-        self._rewards = self._series_to_dict(
-            markov.reward) if markov.reward is not None else {}
-        self._probs = self._series_to_dict(
+        self.rewards = self._series_to_dict(
+            markov.rewards) if markov.rewards is not None else {}
+        self.probs = self._series_to_dict(
             markov.probs) if markov.probs is not None else {}
-        self._values = self._series_to_dict(
+        self.values = self._series_to_dict(
             markov.values) if markov.values is not None else {}
 
     def _draw_graph(self, show_rewards=False, show_probabilities=False, show_values=False):
@@ -126,13 +126,13 @@ class PlotMarkov:
             label = f'<B>{state}</B>'
 
             if show_rewards:
-                r = self._rewards.get(state, 0)
+                r = self.rewards.get(state, 0)
                 label += f'<br/><FONT COLOR="Black" POINT-SIZE="10">r = {r:.2f}</FONT>'
             if show_probabilities:
-                p = self._probs.get(state, 0)
+                p = self.probs.get(state, 0)
                 label += f'<br/><FONT COLOR="Red" POINT-SIZE="10">p = {p:1.2f}</FONT>'
             if show_values:
-                v = self._values.get(state, 0)
+                v = self.values.get(state, 0)
                 label += f'<br/><FONT COLOR="Green" POINT-SIZE="10">v = {v:.2f}</FONT>'
 
             graph.node(state, label=f'<{label}>',
@@ -145,16 +145,30 @@ class PlotMarkov:
                            label=f' {probability:.2f} ')
         return graph
 
+    def draw_graph(self):
+        return self._draw_graph()
+
     def draw_graph_with_rewards(self):
+        if not self.rewards:
+            raise ValueError("'rewards' is empty")
         return self._draw_graph(show_rewards=True)
 
     def draw_graph_with_probs(self):
+        if not self.probs:
+            raise ValueError("'probs' is empty")
         return self._draw_graph(show_probabilities=True)
 
     def draw_graph_with_values(self):
+        if not self.values:
+            raise ValueError("'values' is empty")
         return self._draw_graph(show_values=True)
 
     def draw_graph_with_rewards_and_values(self):
+        if not self.rewards:
+            raise ValueError("'rewards' is empty")
+        if not self.values:
+            raise ValueError("'values' is empty")
+
         return self._draw_graph(show_rewards=True, show_values=True)
 
     def _dataframe_to_dict(self, frame):
