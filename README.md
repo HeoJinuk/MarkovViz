@@ -13,12 +13,6 @@ A Python library for implementing and visualizing Markov models with a focus on 
   - Rewards and state values
   - Combined views for reinforcement learning analysis
 
-## Installation
-
-```bash
-pip install markovviz  # Note: Update with actual package name
-```
-
 ## Quick Start
 
 ### Basic Markov Chain
@@ -37,22 +31,47 @@ transitions = np.array([
 # Create MarkovChain instance
 mc = MarkovChain(transitions, node_names=['A', 'B', 'C'])
 
-# Visualize
+# Set initial state probabilities
+initial_state = {'A': 1.0, 'B': 0.0, 'C': 0.0}  # Start from state A
+# Or using array: initial_state = [1.0, 0.0, 0.0]
+
+# Calculate convergence
+final_state = mc.converge_markov_chain(
+    initial_state=initial_state,
+    max_iterations=1000,
+    threshold=1e-6,
+    verbose=True
+)
+print("Converged state probabilities:", final_state)
+# Example output:
+# Iteration 1: [0.7  0.15 0.15]
+# Iteration 2: [0.49 0.36 0.15]
+# ...
+# Converged in 21 iterations.
+# Converged state probabilities: [0.38461615 0.23076912 0.38461473]
+
+# Visualize with final probabilities
+mc.set_probs(final_state)
 plot = PlotMarkov(mc)
-graph = plot.draw_graph()
-graph.render('markov_chain', view=True, format='png')
+graph = plot.draw_graph_with_probs()
+graph.render('markov_chain_converged', view=True, format='png')
 ```
 
-### Markov Reward Process
+### Markov Reward Process - State Value Evaluation
 
 ```python
 from markov import MarkovRewardProcess
 
-# Define transitions and rewards
+# Define a simple grid world:
+# [Start] --> [Left]  --> [End]
+#   |          ^
+#   v          |
+# [Right] -----+
+
 transitions = {
     'Start': {'Left': 0.4, 'Right': 0.6},
     'Left': {'Start': 0.3, 'End': 0.7},
-    'Right': {'Start': 0.2, 'End': 0.8},
+    'Right': {'Start': 0.2, 'Left': 0.3, 'End': 0.5},
     'End': {'End': 1.0}
 }
 
@@ -63,16 +82,30 @@ rewards = {
     'End': 10
 }
 
-# Create MRP instance
+# Create MRP instance with discount factor
 mrp = MarkovRewardProcess(transitions, rewards, gamma=0.9)
 
-# Calculate state values
-values = mrp.evaluate_by_linear_equation()
+# Evaluate using linear equation method
+values_linear = mrp.evaluate_by_linear_equation()
+print("State values (Linear Equation):", values_linear)
+# Example output:
+# Start: 85.31, Left: 93.03, Right: 90.77, End: 100.0
 
-# Visualize with rewards and values
+# Evaluate using dynamic programming
+values_dp = mrp.evaluate_by_DP(threshold=0.001)
+print("State values (Dynamic Programming):", values_dp)
+# Example output:
+# Start: 85.30, Left: 93.02, Right: 90.76, End: 99.99
+
+# Compare results
+print("Maximum difference between methods:", 
+      max(abs(values_linear - values_dp)))
+
+# Visualize with both rewards and computed values
+mrp.set_values(values_linear)  # or values_dp
 plot = PlotMarkov(mrp)
 graph = plot.draw_graph_with_rewards_and_values()
-graph.render('markov_reward_process', view=True, format='png')
+graph.render('markov_reward_process_evaluated', view=True, format='png')
 ```
 
 ## Class Overview
@@ -123,6 +156,5 @@ If you use this library in your research, please cite:
 @software{markovviz2024,
   title = {MarkovViz: A Python Library for Markov Models and Reinforcement Learning Visualization},
   year = {2024},
-  // Add other relevant citation information
 }
 ```
