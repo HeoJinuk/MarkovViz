@@ -49,7 +49,7 @@ class Markov:
     def transitions_as_array(self):
         return self._transitions.values
 
-    def save_to_csv(self):
+    def save_transition_to_csv(self):
         pass
 
     def _dict_to_dataframe(self, _dict):
@@ -62,6 +62,9 @@ class Markov:
 
     def _dict_to_series(self, _dict):
         return pd.Series(_dict)
+
+    def _series_to_array(self, series):
+        return series.values
 
     def _validate_and_convert_1d(self, data, data_name):
         if isinstance(data, pd.Series):
@@ -100,8 +103,9 @@ class MarkovChain(Markov):
         self._probs = self._validate_and_convert_1d(probs, 'probs')
 
     def converge_markov_chain(self, initial_state, max_iterations=None, threshold=1e-6, verbose=False):
-        state = self._validate_and_convert_1d(
-            initial_state, 'initial_state').values
+        state = self._validate_and_convert_1d(initial_state, 'initial_state')
+        state = self._series_to_array(state)
+
         iteration = 0
         transition_matrix = self.transitions_as_array()
 
@@ -131,11 +135,11 @@ class MarkovChain(Markov):
 
 
 class MarkovRewardProcess(Markov):
-    def __init__(self, transitions, node_names=None, rewards=None, values=None,):
+    def __init__(self, transitions, rewards, gamma=0.9, node_names=None, values=None,):
         super().__init__(transitions=transitions, node_names=node_names)
 
-        if rewards is not None:
-            self._rewards = self._validate_and_convert_1d(rewards, 'rewards')
+        self._rewards = self._validate_and_convert_1d(rewards, 'rewards')
+        self.gamma = gamma
 
         if values is not None:
             self._values = self._validate_and_convert_1d(values, 'values')
@@ -148,9 +152,15 @@ class MarkovRewardProcess(Markov):
     def values(self):
         return self._is_variable_defined('_values')
 
-    @property
-    def probs(self):
-        return self._is_variable_defined('_probs')
+    def set_values(self, values):
+        self._values = self._validate_and_convert_1d(values, 'values')
+
+    def evaluate_by_linear_equation(self):
+        P = self.transitions_as_array()
+        I = np.eye(*P.shape)
+        R = self._series_to_array(self._rewards)
+
+        return np.linalg.inv(I - self.gamma*P) @ (P@R)
 
 
 class PlotMarkov:
@@ -200,17 +210,20 @@ class PlotMarkov:
         return graph
 
     def draw_graph(self):
-        return self._draw_graph()
-
-    def draw_graph_with_rewards(self):
-        if not self.rewards:
-            raise ValueError("'rewards' is empty")
-        return self._draw_graph(show_rewards=True)
+        if isinstance(self.markov, MarkovRewardProcess):
+            return self.draw_graph_with_rewards()
+        else:
+            return self._draw_graph()
 
     def draw_graph_with_probs(self):
         if not self.probs:
             raise ValueError("'probs' is empty")
         return self._draw_graph(show_probabilities=True)
+
+    def draw_graph_with_rewards(self):
+        if not self.rewards:
+            raise ValueError("'rewards' is empty")
+        return self._draw_graph(show_rewards=True)
 
     def draw_graph_with_values(self):
         if not self.values:
