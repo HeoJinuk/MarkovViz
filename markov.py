@@ -45,9 +45,6 @@ class Markov:
     def node_names(self):
         return self._node_names
 
-    def draw(self):
-        pass
-
     def save_to_csv(self):
         pass
 
@@ -58,3 +55,49 @@ class Markov:
                 df.loc[from_state, to_state] = probability
 
         return df
+
+
+class PlotMarkov:
+    def __init__(self, markov):
+        self.markov = markov
+        self.transitions = self._dataframe_to_dict(markov.transitions)
+        self._probabilities = {}
+        self._values = {}
+
+    def _draw_graph(self, show_probabilities=False, show_values=False):
+        graph = Digraph()
+        graph.attr(rankdir='LR')
+        graph.attr('node', shape='circle',
+                   style='filled', fillcolor='lightblue')
+
+        # Add nodes
+        for state in self.transitions.keys():
+            label = f'<B>{state}</B>'
+
+            if show_probabilities:
+                p = self._probabilities.get(state, 0)
+                label += f'<br/><FONT COLOR="Red" POINT-SIZE="10">p = {p:1.2f}</FONT>'
+            if show_values:
+                v = self._values.get(state, 0)
+                label += f'<br/><FONT COLOR="Green" POINT-SIZE="10">v = {v:.2f}</FONT>'
+
+            graph.node(state, label=f'<{label}>',
+                       width='0.8', height='0.8', fixedsize='true')
+
+        # Add edges with probabilities
+        for from_state, destinations in self.transitions.items():
+            for to_state, probability in destinations.items():
+                graph.edge(from_state, to_state,
+                           label=f' {probability:.2f} ')
+        return graph
+
+    def _dataframe_to_dict(self, frame):
+        transitions = frame.T.to_dict()
+        transitions = {
+            from_state: {
+                to_state: probability
+                for to_state, probability in destinations.items() if probability != 0
+            }
+            for from_state, destinations in transitions.items()
+        }
+        return transitions
